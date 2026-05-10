@@ -448,6 +448,7 @@ class TTSConverter:
             pause_sentence=self.options.pause_sentence,
             pause_paragraph=self.options.pause_paragraph,
             pause_variance=self.options.pause_variance,
+            enable_short_sentence=self.options.enable_short_sentence,
             model_quality=self.options.model_quality,
             model_source=self.options.model_source,
             model_variant=self.options.model_variant,

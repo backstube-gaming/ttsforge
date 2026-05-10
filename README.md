@@ -50,6 +50,8 @@ pip install "ttsforge[gpu]"
 
 - **ffmpeg**: Required for MP3/FLAC/OPUS/M4B output and chapter merging
 - **espeak-ng**: Required for phonemization
+- **spaCy (optional)**: Required for sentence splitting, name extraction, and
+  spaCy-aware phonemization workflows
 - **sounddevice (optional)**: Required for audio playback (`--play`, `read`)
 
 **Ubuntu/Debian:**
@@ -62,6 +64,14 @@ sudo apt-get install ffmpeg espeak-ng
 
 ```bash
 brew install ffmpeg espeak-ng
+```
+
+**spaCy models (optional):**
+
+```bash
+pip install spacy
+python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_md
 ```
 
 ## Quick Start
@@ -393,6 +403,7 @@ For automatic name extraction (optional but recommended):
 ```bash
 pip install spacy
 python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_md
 ```
 
 #### Workflow

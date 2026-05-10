@@ -34,6 +34,7 @@ class KokoroRunOptions:
     pause_sentence: float
     pause_paragraph: float
     pause_variance: float
+    enable_short_sentence: bool | None = None
     model_quality: ModelQuality | None = DEFAULT_MODEL_QUALITY
     model_source: ModelSource = DEFAULT_MODEL_SOURCE
     model_variant: ModelVariant = DEFAULT_MODEL_VARIANT
