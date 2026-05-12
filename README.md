@@ -188,6 +188,19 @@ ttsforge config --set use_gpu true
 ttsforge config --reset
 ```
 
+Advanced short-sentence handling can be managed with a JSON config:
+
+```bash
+# Create and link the advanced short-sentence config
+ttsforge short-sentence-advanced-config init
+
+# Show the advanced short-sentence config
+ttsforge short-sentence-advanced-config show
+
+# Reset the advanced short-sentence config to defaults
+ttsforge short-sentence-advanced-config reset
+```
+
 ### Filename Templates
 
 Customize output filenames with metadata:
