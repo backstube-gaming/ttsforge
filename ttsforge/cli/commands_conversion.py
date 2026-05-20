@@ -47,6 +47,7 @@ from ..conversion import (
     detect_language_from_iso,
     get_default_voice_for_language,
 )
+from ..text_postprocessing import resolve_text_postprocess_options
 from ..utils import (
     format_chapters_range,
     format_filename_template,
@@ -293,6 +294,15 @@ def get_voices() -> list[str]:
     is_flag=True,
     help="Make phoneme dictionary matching case-sensitive (default: case-insensitive).",
 )
+@click.option(
+    "--subchapter-marker",
+    "subchapter_markers",
+    multiple=True,
+    help=(
+        "Exact line marker to convert into a paragraph pause. "
+        "Repeat for multiple markers."
+    ),
+)
 @click.pass_context
 def convert(  # noqa: C901
     ctx: click.Context,
@@ -333,6 +343,7 @@ def convert(  # noqa: C901
     mixed_language_confidence: float | None,
     phoneme_dictionary_path: str | None,
     phoneme_dict_case_sensitive: bool,
+    subchapter_markers: tuple[str, ...],
 ) -> None:
     """Convert an EPUB file to an audiobook.
 
@@ -345,6 +356,10 @@ def convert(  # noqa: C901
     model_quality = cast(
         ModelQuality, config.get("model_quality", DEFAULT_MODEL_QUALITY)
     )
+    text_postprocess_options = resolve_text_postprocess_options(
+        config,
+        subchapter_markers=subchapter_markers,
+    )
 
     # Get format first (needed for output path construction)
     fmt = output_format or config.get("default_format", "m4b")
@@ -356,7 +371,10 @@ def convert(  # noqa: C901
 
     # Parse input file
     try:
-        reader = InputReader(epub_file)
+        reader = InputReader(
+            epub_file,
+            postprocess_options=text_postprocess_options,
+        )
     except Exception as e:
         console.print(f"[red]Error loading file:[/red] {e}")
         sys.exit(1)
@@ -609,11 +627,11 @@ def convert(  # noqa: C901
             "chapter_filename_template",
             "{chapter_num:03d}_{book_title}_{chapter_title}",
         ),
-        model_path=model_path,
-        voices_path=voices_path,
-        generate_ssmd_only=generate_ssmd_only,
-        detect_emphasis=detect_emphasis,
-    )
+            model_path=model_path,
+            voices_path=voices_path,
+            generate_ssmd_only=generate_ssmd_only,
+            detect_emphasis=detect_emphasis,
+        )
 
     # Set up progress display
     progress = Progress(

@@ -136,6 +136,7 @@ DEFAULT_CONFIG = {
     "pause_variance": 0.05,
     "pause_mode": "auto",  # "tts", "manual", or "auto
     "enable_short_sentence": None,
+    "subchapter_markers": [],
     # Language override for phonemization (e.g., 'de', 'fr', 'en-us')
     # If None, language is determined from voice prefix
     "phonemization_lang": None,
