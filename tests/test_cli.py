@@ -105,6 +105,7 @@ class TestConvertCommand:
         assert result.exit_code == 0
         assert "convert" in result.output.lower()
         assert "--voice" in result.output
+        assert "--skip-chapters" in result.output
         assert "--resume" in result.output or "resume" in result.output.lower()
 
     def test_convert_requires_input(self, runner):
