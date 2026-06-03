@@ -12,6 +12,7 @@ import logging
 import re
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 from types import FrameType
 from typing import Literal, TypedDict, cast
@@ -337,6 +338,14 @@ def get_voices() -> list[str]:
         "Repeat for multiple markers."
     ),
 )
+@click.option(
+    "--replace-non-book-abbreviations",
+    is_flag=True,
+    help=(
+        "Replace abbreviations commonly misread in narrative text "
+        "(currently No. -> No .)."
+    ),
+)
 @click.pass_context
 def convert(  # noqa: C901
     ctx: click.Context,
@@ -381,6 +390,7 @@ def convert(  # noqa: C901
     phoneme_dictionary_path: str | None,
     phoneme_dict_case_sensitive: bool,
     subchapter_markers: tuple[str, ...],
+    replace_non_book_abbreviations: bool,
 ) -> None:
     """Convert an EPUB file to an audiobook.
 
@@ -403,6 +413,11 @@ def convert(  # noqa: C901
         config,
         subchapter_markers=subchapter_markers,
     )
+    if replace_non_book_abbreviations:
+        text_postprocess_options = replace(
+            text_postprocess_options,
+            replace_non_book_abbreviations=True,
+        )
     effective_language = language or config.get("default_language", "a")
     effective_enable_short_sentence = (
         enable_short_sentence
@@ -1538,6 +1553,14 @@ def _validate_short_sentence_or_abort(
         "or 'config=path/to/short_sentence.json'."
     ),
 )
+@click.option(
+    "--replace-non-book-abbreviations",
+    is_flag=True,
+    help=(
+        "Replace abbreviations commonly misread in narrative text "
+        "(currently No. -> No .)."
+    ),
+)
 @click.pass_context
 def read(  # noqa: C901
     ctx: click.Context,
@@ -1563,6 +1586,7 @@ def read(  # noqa: C901
     pause_mode: str | None,
     enable_short_sentence: bool | None,
     short_sentence: str | None,
+    replace_non_book_abbreviations: bool,
 ) -> None:
     """Read an EPUB or text file aloud with streaming playback.
 
@@ -1615,6 +1639,11 @@ def read(  # noqa: C901
         ModelQuality, config.get("model_quality", DEFAULT_MODEL_QUALITY)
     )
     text_postprocess_options = resolve_text_postprocess_options(config)
+    if replace_non_book_abbreviations:
+        text_postprocess_options = replace(
+            text_postprocess_options,
+            replace_non_book_abbreviations=True,
+        )
     resolved_defaults = resolve_conversion_defaults(
         config,
         {
