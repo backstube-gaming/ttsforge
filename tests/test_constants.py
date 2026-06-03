@@ -204,6 +204,10 @@ class TestDefaultConfig:
             "mode=randomized,threshold=30,selection=auto,max-tries=5"
         )
 
+    def test_subchapter_marker_default(self):
+        """Subchapter markers should default to disabled."""
+        assert DEFAULT_CONFIG["subchapter_markers"] == []
+
 
 class TestAudioSettings:
     """Tests for audio settings."""

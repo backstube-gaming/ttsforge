@@ -135,6 +135,7 @@ class TestConvertCommand:
         assert "convert" in result.output.lower()
         assert "--voice" in result.output
         assert "--skip-chapters" in result.output
+        assert "--subchapter-marker" in result.output
         assert "--resume" in result.output or "resume" in result.output.lower()
         assert "--disable-short-sentence" in result.output
         assert "--enable-short-sentence" not in result.output
