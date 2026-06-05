@@ -33,6 +33,7 @@ from ..constants import (
     SUPPORTED_OUTPUT_FORMATS,
     VOICES,
 )
+from ..title_normalization import normalize_chapter_titles
 from ..utils import (
     format_chapters_range,
     format_filename_template,
@@ -121,6 +122,11 @@ def phonemes() -> None:
     default=300,
     help="Maximum characters per segment (for additional splitting of long segments).",
 )
+@click.option(
+    "--capitalized-titles",
+    is_flag=True,
+    help="Lowercase detected chapter titles except for the first letter for TTS.",
+)
 def phonemes_export(
     epub_file: Path,
     output: Path | None,
@@ -130,6 +136,7 @@ def phonemes_export(
     vocab_version: str,
     split_mode: str,
     max_chars: int,
+    capitalized_titles: bool,
 ) -> None:
     """Export an EPUB as pre-tokenized phoneme data.
 
@@ -173,6 +180,9 @@ def phonemes_export(
     if not epub_chapters:
         console.print("[red]Error:[/red] No chapters found in file.")
         sys.exit(1)
+
+    if capitalized_titles:
+        normalize_chapter_titles(epub_chapters)
 
     # Chapter selection
     selected_indices: list[int] | None = None
@@ -384,6 +394,11 @@ def phonemes_export(
     help="Pause duration after chapter title announcement in seconds (default: 2.0).",
 )
 @click.option(
+    "--capitalized-titles",
+    is_flag=True,
+    help="Lowercase chapter titles except for the first letter for TTS.",
+)
+@click.option(
     "--chapters",
     type=str,
     default=None,
@@ -453,6 +468,7 @@ def phonemes_convert(
     pause_mode: str | None,
     announce_chapters: bool | None,
     chapter_pause: float | None,
+    capitalized_titles: bool,
     chapters: str | None,
     title: str | None,
     author: str | None,
@@ -642,6 +658,7 @@ def phonemes_convert(
             if chapter_pause is not None
             else config.get("chapter_pause_after_title", 2.0)
         ),
+        capitalized_titles=capitalized_titles,
         title=effective_title,
         author=effective_author,
         cover_image=cover,

@@ -30,6 +30,7 @@ from .constants import SAMPLE_RATE, SUPPORTED_OUTPUT_FORMATS
 from .kokoro_lang import get_onnx_lang_code
 from .kokoro_runner import KokoroRunner, KokoroRunOptions
 from .phonemes import PhonemeBook, PhonemeChapter, PhonemeSegment
+from .title_normalization import capitalize_title_for_tts, normalize_chapter_titles
 from .utils import (
     atomic_write_json,
     create_process,
@@ -243,6 +244,7 @@ class PhonemeConversionOptions:
     # Chapter announcement settings
     announce_chapters: bool = True  # Read chapter titles aloud before content
     chapter_pause_after_title: float = 2.0  # Pause after chapter title (seconds)
+    capitalized_titles: bool = False
     # Metadata for m4b
     title: str | None = None
     author: str | None = None
@@ -477,8 +479,13 @@ class PhonemeConverter:
             # Announce chapter title if enabled
             # Only announce if there are segments to follow
             if self.options.announce_chapters and chapter.title and chapter.segments:
+                chapter_title = (
+                    capitalize_title_for_tts(chapter.title)
+                    if self.options.capitalized_titles
+                    else chapter.title
+                )
                 title_samples = self._runner.synthesize(
-                    chapter.title,
+                    chapter_title,
                     lang_code=lang_code,
                     pause_mode="tts",
                     is_phonemes=False,
@@ -562,6 +569,9 @@ class PhonemeConverter:
         Returns:
             PhonemeConversionResult with success status and paths
         """
+        if self.options.capitalized_titles:
+            normalize_chapter_titles(self.book.chapters)
+
         selected_chapters = self._get_selected_chapters()
         selected_indices = self._get_selected_indices()
 
@@ -681,6 +691,15 @@ class PhonemeConverter:
                 )
                 state.save(state_file)
             else:
+                if self.options.capitalized_titles:
+                    for chapter_state in state.chapters:
+                        chapter = self.book.chapters[chapter_state.index]
+                        if chapter_state.title != chapter.title:
+                            chapter_state.title = chapter.title
+                            chapter_state.completed = False
+                            chapter_state.audio_file = None
+                            chapter_state.duration = 0.0
+
                 completed = state.get_completed_count()
                 total = len(selected_chapters)
                 self.log(f"Resuming conversion: {completed}/{total} chapters completed")
@@ -871,6 +890,9 @@ class PhonemeConverter:
         Returns:
             PhonemeConversionResult with success status and paths
         """
+        if self.options.capitalized_titles:
+            normalize_chapter_titles(self.book.chapters)
+
         selected_chapters = self._get_selected_chapters()
 
         if not selected_chapters:

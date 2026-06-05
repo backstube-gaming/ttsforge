@@ -17,7 +17,9 @@ from ttsforge.conversion import (
     detect_language_from_iso,
     get_default_voice_for_language,
     get_voice_language,
+    parse_text_chapters,
 )
+from ttsforge.title_normalization import capitalize_title_for_tts
 
 
 class TestChapter:
@@ -250,6 +252,31 @@ class TestConversionOptions:
 
         options = ConversionOptions(voice_database=Path("/tmp/voices.db"))
         assert options.voice_database == Path("/tmp/voices.db")
+
+    def test_capitalized_titles_default(self):
+        """capitalized_titles should be disabled by default."""
+        options = ConversionOptions()
+        assert options.capitalized_titles is False
+
+
+class TestTitleNormalization:
+    """Tests for title normalization used before TTS."""
+
+    def test_capitalize_title_for_tts(self):
+        """Should lowercase all title text except the first letter."""
+        assert capitalize_title_for_tts("THE STORY SO FAR") == "The story so far"
+        assert capitalize_title_for_tts(" chapter II: NASA ") == "Chapter ii: nasa"
+        assert capitalize_title_for_tts("1. INTRODUCTION") == "1. Introduction"
+
+    def test_parse_text_chapters_capitalized_titles(self):
+        """Detected text headers should be normalized when requested."""
+        text = "CHAPTER I: START\nFirst text.\nCHAPTER II: END\nFinal text."
+        chapters = parse_text_chapters(text, capitalized_titles=True)
+
+        assert [chapter.title for chapter in chapters] == [
+            "Chapter i: start",
+            "Chapter ii: end",
+        ]
 
 
 class TestSplitModes:

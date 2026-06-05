@@ -113,6 +113,11 @@ class TestChapterAnnouncementPhonemeConversion:
         options = PhonemeConversionOptions()
         assert options.chapter_pause_after_title == 2.0
 
+    def test_phoneme_capitalized_titles_default(self):
+        """Test capitalized_titles is disabled by default."""
+        options = PhonemeConversionOptions()
+        assert options.capitalized_titles is False
+
     @patch("ttsforge.phoneme_conversion.KokoroRunner")
     @patch("ttsforge.phoneme_conversion.prevent_sleep_start")
     @patch("ttsforge.phoneme_conversion.prevent_sleep_end")
@@ -142,6 +147,42 @@ class TestChapterAnnouncementPhonemeConversion:
             texts = [call.args[0] for call in mock_runner.synthesize.call_args_list]
             assert "Chapter One" in texts
             assert "Chapter Two" in texts
+
+    @patch("ttsforge.phoneme_conversion.KokoroRunner")
+    @patch("ttsforge.phoneme_conversion.prevent_sleep_start")
+    @patch("ttsforge.phoneme_conversion.prevent_sleep_end")
+    def test_phoneme_capitalized_title_announcement(
+        self,
+        mock_prevent_end,
+        mock_prevent_start,
+        mock_runner_class,
+    ):
+        """Test title announcements can be normalized for TTS."""
+        fake_audio = np.zeros(24000, dtype="float32")
+        mock_runner = MagicMock()
+        mock_runner.synthesize.return_value = fake_audio
+        mock_runner_class.return_value = mock_runner
+
+        book = PhonemeBook(title="Test Book")
+        chapter = book.create_chapter("THE STORY SO FAR")
+        chapter.add_segment(
+            PhonemeSegment(text="Hello", phonemes="hÉ™ËˆloÊŠ", tokens=[50])
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "test.wav"
+            options = PhonemeConversionOptions(
+                output_format="wav",
+                announce_chapters=True,
+                capitalized_titles=True,
+            )
+            converter = PhonemeConverter(book, options)
+
+            converter.convert(output_path)
+
+            texts = [call.args[0] for call in mock_runner.synthesize.call_args_list]
+            assert "The story so far" in texts
+            assert "THE STORY SO FAR" not in texts
 
     @patch("ttsforge.phoneme_conversion.KokoroRunner")
     @patch("ttsforge.phoneme_conversion.prevent_sleep_start")

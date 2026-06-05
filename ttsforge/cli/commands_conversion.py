@@ -47,6 +47,7 @@ from ..conversion import (
     detect_language_from_iso,
     get_default_voice_for_language,
 )
+from ..title_normalization import normalize_chapter_titles
 from ..utils import (
     format_chapters_range,
     format_filename_template,
@@ -176,6 +177,11 @@ def get_voices() -> list[str]:
     type=float,
     default=None,
     help="Pause duration after chapter title announcement in seconds (default: 2.0).",
+)
+@click.option(
+    "--capitalized-titles",
+    is_flag=True,
+    help="Lowercase detected chapter titles except for the first letter for TTS.",
 )
 @click.option(
     "--title",
@@ -314,6 +320,7 @@ def convert(  # noqa: C901
     enable_short_sentence: bool | None,
     announce_chapters: bool | None,
     chapter_pause: float | None,
+    capitalized_titles: bool,
     title: str | None,
     author: str | None,
     cover: Path | None,
@@ -387,6 +394,9 @@ def convert(  # noqa: C901
     if not epub_chapters:
         console.print("[red]Error:[/red] No chapters found in file.")
         sys.exit(1)
+
+    if capitalized_titles:
+        normalize_chapter_titles(epub_chapters)
 
     console.print(f"[green]Found {len(epub_chapters)} chapters[/green]")
 
@@ -597,6 +607,7 @@ def convert(  # noqa: C901
             if chapter_pause is not None
             else config.get("chapter_pause_after_title", 2.0)
         ),
+        capitalized_titles=capitalized_titles,
         split_mode=split_mode or config.get("default_split_mode", "auto"),
         resume=resume,
         keep_chapter_files=keep_chapter_files,

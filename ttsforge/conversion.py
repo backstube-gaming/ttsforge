@@ -36,6 +36,7 @@ from .ssmd_generator import (
     load_ssmd_file,
     save_ssmd_file,
 )
+from .title_normalization import capitalize_title_for_tts, normalize_chapter_titles
 from .utils import (
     atomic_write_json,
     format_duration,
@@ -322,6 +323,7 @@ class ConversionOptions:
     # Chapter announcement settings
     announce_chapters: bool = True  # Read chapter titles aloud before content
     chapter_pause_after_title: float = 2.0  # Pause after chapter title (seconds)
+    capitalized_titles: bool = False
     save_chapters_separately: bool = False
     merge_at_end: bool = True
     # Split mode: auto, line, paragraph, sentence, clause
@@ -596,6 +598,9 @@ class TTSConverter:
                 error_message=f"Unsupported format: {self.options.output_format}",
             )
 
+        if self.options.capitalized_titles:
+            normalize_chapter_titles(chapters)
+
         self._cancel_event.clear()
         prevent_sleep_start()
 
@@ -742,6 +747,16 @@ class TTSConverter:
                 )
                 state.save(state_file)
             else:
+                if self.options.capitalized_titles:
+                    for chapter_state, chapter in zip(state.chapters, chapters):
+                        if chapter_state.title != chapter.title:
+                            chapter_state.title = chapter.title
+                            chapter_state.completed = False
+                            chapter_state.audio_file = None
+                            chapter_state.duration = 0.0
+                            chapter_state.ssmd_file = None
+                            chapter_state.ssmd_hash = None
+
                 completed = state.get_completed_count()
                 total = len(chapters)
                 self.log(f"Resuming conversion: {completed}/{total} chapters completed")
@@ -1087,6 +1102,9 @@ class TTSConverter:
             )
             chapters.append(Chapter(title=ch.title, content=content, index=i))
 
+        if self.options.capitalized_titles:
+            normalize_chapter_titles(chapters)
+
         self.log(f"Found {len(chapters)} chapters")
 
         # Try to get metadata from EPUB for m4b
@@ -1111,7 +1129,7 @@ class TTSConverter:
         return result
 
 
-def parse_text_chapters(text: str) -> list[Chapter]:
+def parse_text_chapters(text: str, capitalized_titles: bool = False) -> list[Chapter]:
     """
     Parse text content into chapters based on chapter markers.
 
@@ -1124,7 +1142,8 @@ def parse_text_chapters(text: str) -> list[Chapter]:
     matches = list(CHAPTER_PATTERN.finditer(text))
 
     if not matches:
-        return [Chapter(title="Text", content=text.strip(), index=0)]
+        title = capitalize_title_for_tts("Text") if capitalized_titles else "Text"
+        return [Chapter(title=title, content=text.strip(), index=0)]
 
     chapters = []
 
@@ -1133,7 +1152,12 @@ def parse_text_chapters(text: str) -> list[Chapter]:
     if first_start > 0:
         intro_text = text[:first_start].strip()
         if intro_text:
-            chapters.append(Chapter(title="Introduction", content=intro_text, index=0))
+            title = (
+                capitalize_title_for_tts("Introduction")
+                if capitalized_titles
+                else "Introduction"
+            )
+            chapters.append(Chapter(title=title, content=intro_text, index=0))
 
     # Parse chapters
     for idx, match in enumerate(matches):
@@ -1141,6 +1165,8 @@ def parse_text_chapters(text: str) -> list[Chapter]:
         end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
 
         chapter_name = match.group().strip()
+        if capitalized_titles:
+            chapter_name = capitalize_title_for_tts(chapter_name)
         chapter_text = text[start:end].strip()
 
         if chapter_text:
